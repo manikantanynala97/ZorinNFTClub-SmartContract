@@ -8,11 +8,10 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 contract ZorinNFTClub is ERC721Enumerable,Ownable
 {
 
+    string BaseURI ;
     uint256 public Listing_Price = 0.2 ether ;
     uint256 public TotalNFT = 30;
     uint256 public MintedNFT ;
-
-    string BaseURI ;
     address public  owner ;
     address public  manikanta = 0x6633582BE61552de02103EECeDB806735fA021be;
 
@@ -22,6 +21,11 @@ contract ZorinNFTClub is ERC721Enumerable,Ownable
         owner = payable(msg.sender);
     }
 
+     modifier OnlyOwner
+    {
+        require(owner == msg.sender ,"only owner can withdraw the balance from the contract");
+        _;
+    }
    
     function UpdateListingPrice(uint256 price) public OnlyOwner
     {
@@ -31,23 +35,7 @@ contract ZorinNFTClub is ERC721Enumerable,Ownable
     function _baseURI() internal view virtual override returns (string memory) {
             return BaseURI;
         }
-
-
-    modifier OnlyOwner
-    {
-        require(owner == msg.sender ,"only owner can withdraw the balance from the contract");
-        _;
-    }
     
-     receive() external payable 
-     {
-
-     }
-
-     fallback() external payable 
-     {
-
-     }
 
      function MintNFT() public payable 
      { 
@@ -84,6 +72,17 @@ contract ZorinNFTClub is ERC721Enumerable,Ownable
    {
        transferOwnership(_owner);
    }
+   
+   
+        receive() external payable 
+     {
+
+     }
+
+     fallback() external payable 
+     {
+
+     }
 
 
    
