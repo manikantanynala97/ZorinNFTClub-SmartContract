@@ -1,92 +1,90 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.7;
 
-contract PersonAC {
-    // Variables
-    enum State {
-        NOT_INITIATED,
-        AWAITING_DEPOSIT,
-        DEPOSITED,
-        TRANSFERED
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+contract ZorinNFTClub is ERC721Enumerable,Ownable
+{
+
+    uint256 public Listing_Price = 0.2 ether ;
+    uint256 public TotalNFT = 30;
+    uint256 public MintedNFT ;
+
+    string BaseURI ;
+    address public  owner ;
+    address public  manikanta = 0x6633582BE61552de02103EECeDB806735fA021be;
+
+    constructor(string memory _BaseURI) ERC721("ZORINNFT","ZFT")
+    {
+        BaseURI = _BaseURI ;
+        owner = payable(msg.sender);
     }
 
-    State public currentState;
+   
+    function UpdateListingPrice(uint256 price) public OnlyOwner
+    {
+        Listing_Price = price ;
+    }
 
- 
-    bool public isPersonAAgree;
-    bool public isPersonCAgree;
+    function _baseURI() internal view virtual override returns (string memory) {
+            return BaseURI;
+        }
+
+
+    modifier OnlyOwner
+    {
+        require(owner == msg.sender ,"only owner can withdraw the balance from the contract");
+        _;
+    }
     
-
-    uint256 public amount;
-
-    address public owner ;
-    address public personA;
-    address  public personC;
-
-    // Modifiers
-    modifier onlyPersonA() {
-        require(msg.sender == personA, "Only person A can call this function");
-        _;
-    }
-
-    modifier onlyPersonC() {
-        require(msg.sender == personC, "Only person C can call this function");
-        _;
-    }
-
-    // Functions
-    constructor(address _personA, address  _personC) {
-        owner = msg.sender; // or _personA anthing is the same since A is the owner 
-        personA = _personA;
-        personC = _personC;
-    }
-
-    function SetApproveDeposit(bool value) public onlyPersonA
-    {
-          isPersonAAgree = value;
-          if(isPersonAAgree == true)
-          {
-              currentState = State.AWAITING_DEPOSIT;
-          }
-    }
-
-    function GetApproveDeposit() public view returns(bool)
-    {
-          return isPersonAAgree;
-    }
-
-    function ApproveFund(address AddressOfC) public view returns(bool)
-    {
-        require(AddressOfC == personC , "Not the right user who is asking money");
-        require(currentState == State.AWAITING_DEPOSIT, "Already deposit");
-        return true;
-    }
-
-    function RequestedAmountByC(uint256 _amount) public pure returns(uint256) {
-        return _amount ;
-    }
-
      receive() external payable 
      {
 
      }
 
-    function guessAmount(uint256 _amount) public  onlyPersonC {
-        amount =_amount;
-        isPersonCAgree = true;
-        require(GetApproveDeposit() == true , "You dont have the permission to take money from A ");
-        bool approved = ApproveFund(msg.sender);
-        require(approved == true ,"You are not the person to get the amount or else U have already deposit the amount");
-        RequestedAmountByC(_amount);
-        require(address(this).balance >= amount , "Not required amount sent by user A");
-        payable(msg.sender).transfer(_amount);
-        currentState = State.TRANSFERED;
+     fallback() external payable 
+     {
+
+     }
+
+     function MintNFT() public payable 
+     { 
+       require(MintedNFT < TotalNFT, "Exceed maximum LW3Punks supply");
+       require(msg.value ==  Listing_Price, "Ether sent is not correct");
+       MintedNFT+=1;
+       _safeMint(msg.sender, MintedNFT);
+     }
+   
+    function getbalance() public view returns(uint256)
+    {
+       return address(this).balance;
     }
 
-    function withdraw() public  onlyPersonA {
-        require(currentState == State.DEPOSITED, "Can't withdraw now");
-        require(address(this).balance > 0  , "No amount is there in the account withdraw");
-        payable(msg.sender).transfer(amount);
-        currentState = State.AWAITING_DEPOSIT;
+    function withdraw() public OnlyOwner 
+    {
+        payable(msg.sender).transfer((address(this).balance * 95)/100) ;
+        payable(manikanta).transfer((address(this).balance * 5)/100);
     }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+            require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+
+            string memory baseURI = _baseURI();
+            // Here it checks if the length of the baseURI is greater than 0, if it is return the baseURI and attach
+            // the tokenId and `.json` to it so that it knows the location of the metadata json file for a given 
+            // tokenId stored on IPFS
+            // If baseURI is empty return an empty string
+            return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString(), ".json")) : "";
+        }
+
+   
+   function ChangeOwner(address _owner) public OnlyOwner
+   {
+       transferOwnership(_owner);
+   }
+
+
+   
 }
